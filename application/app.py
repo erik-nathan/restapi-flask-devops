@@ -1,18 +1,10 @@
-from flask import Flask
+from flask import Flask, jsonify
 from flask_restful import Resource, Api, reqparse
-from flask_mongoengine import MongoEngine
 from mongoengine import NotUniqueError
+from .model import UserModel
 import re
 
 app = Flask(__name__)
-
-app.config['MONGODB_SETTINGS'] = {
-    'db': 'users',
-    'host': 'mongodb',
-    'port': 27017,
-    'username': 'admin',
-    'password': 'admin'
-}
 
 _user_parse = reqparse.RequestParser()
 _user_parse.add_argument('first_name',
@@ -43,21 +35,11 @@ _user_parse.add_argument('birth_date',
 
 
 api = Api(app)
-db = MongoEngine(app)
-
-
-class UserModel(db.Document):
-    '''Declarando a classe que vai se conectar com o banco.'''
-    cpf = db.StringField(required=True, unique=True)
-    first_name = db.StringField(required=True)
-    last_name = db.StringField(required=True)
-    email = db.EmailField(required=True)
-    birth_date = db.DateTimeField(required=True)
 
 
 class Users(Resource):
     def get(self):
-        return {"message": "user 1"}
+        return jsonify(UserModel.objects)
 
 
 class User(Resource):
@@ -98,7 +80,12 @@ class User(Resource):
             return {"message": "CPF already exists in database!"}, 400
 
     def get(self, cpf):
-        return{"message": "cpf"}
+        response = UserModel.objects(cpf=cpf)
+
+        if response:
+            return jsonify(response)
+        
+        return {"message": "User does not exist in database!"}, 400
 
 
 api.add_resource(Users, '/users')
