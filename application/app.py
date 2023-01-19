@@ -1,10 +1,9 @@
-from flask import Flask, jsonify
-from flask_restful import Resource, Api, reqparse
+from flask import jsonify
+from flask_restful import Resource, reqparse
 from mongoengine import NotUniqueError
 from .model import UserModel
 import re
 
-app = Flask(__name__)
 
 _user_parse = reqparse.RequestParser()
 _user_parse.add_argument('first_name',
@@ -32,9 +31,6 @@ _user_parse.add_argument('birth_date',
                          required=True,
                          help="This field cannot be blank."
                          )
-
-
-api = Api(app)
 
 
 class Users(Resource):
@@ -72,7 +68,7 @@ class User(Resource):
 
         if not self.validate_cpf(data["cpf"]):
             return {"message": "CPF is invalid!"}, 400
-        
+
         try:
             response = UserModel(**data).save()
             return {"message": f"User {response.id} sucessfully created!"}
@@ -84,12 +80,5 @@ class User(Resource):
 
         if response:
             return jsonify(response)
-        
+
         return {"message": "User does not exist in database!"}, 400
-
-
-api.add_resource(Users, '/users')
-api.add_resource(User, '/user', '/user/<string:cpf>')
-
-if __name__ == '__main__':
-    app.run(debug=True, host="0.0.0.0")
